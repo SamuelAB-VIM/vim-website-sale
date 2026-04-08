@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIM - Sales Deck</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        vim: { cyan: '#22d3ee', blue: '#3b82f6', dark: '#0a0a1a', card: '#111827', border: '#1e293b' }
+      }
+    }
+  }
+}
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+body { font-family: 'Inter', sans-serif; background: #0a0a1a; color: #e2e8f0; }
+.slide { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 4rem 6rem; position: relative; }
+.slide-enter { animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.glow { text-shadow: 0 0 40px rgba(34, 211, 238, 0.3); }
+.card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 2rem; }
+.card:hover { border-color: #22d3ee33; }
+.pill { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+.btn { padding: 0.5rem 1.5rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.btn-primary { background: #22d3ee; color: #0a0a1a; }
+.btn-primary:hover { background: #06b6d4; }
+.btn-secondary { background: transparent; border: 1px solid #334155; color: #94a3b8; }
+.btn-secondary:hover { border-color: #22d3ee; color: #22d3ee; }
+.btn-selected { background: #22d3ee22; border-color: #22d3ee; color: #22d3ee; }
+.questionnaire-option { cursor: pointer; padding: 0.75rem 1.25rem; border: 1px solid #334155; border-radius: 8px; transition: all 0.15s; }
+.questionnaire-option:hover { border-color: #22d3ee66; }
+.questionnaire-option.selected { background: #22d3ee15; border-color: #22d3ee; color: #22d3ee; }
+.drawer { position: fixed; right: 0; top: 0; bottom: 0; width: 360px; background: #111827; border-left: 1px solid #1e293b; transform: translateX(100%); transition: transform 0.3s; z-index: 50; overflow-y: auto; padding: 1.5rem; }
+.drawer.open { transform: translateX(0); }
+.slide-nav { position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; align-items: center; background: #111827dd; backdrop-filter: blur(8px); padding: 0.5rem 1.5rem; border-radius: 9999px; border: 1px solid #1e293b; z-index: 40; }
+.logo-grid img { height: 40px; filter: brightness(0) invert(0.7); opacity: 0.7; transition: opacity 0.2s; }
+.logo-grid img:hover { opacity: 1; }
+.progress-bar { position: fixed; top: 0; left: 0; height: 3px; background: #22d3ee; transition: width 0.3s; z-index: 50; }
+.tag { display: inline-block; padding: 0.125rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+h1 { font-weight: 800; }
+h2 { font-weight: 700; }
+h3 { font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script type="module">
+import { createElement as h, useState, useEffect, useCallback, Fragment } from 'https://esm.sh/react@18';
+import { createRoot } from 'https://esm.sh/react-dom@18/client';
+
+// ============================================================================
+// SLIDE DATA
+// ============================================================================
+
+const SLIDES = [
+  // --- CORE (always shown) ---
+  {
+    id: 'title',
+    category: 'core',
+    title: '',
+    render: () => h('div', { className: 'slide slide-enter flex items-center justify-center text-center' },
+      h('div', null,
+        h('div', { className: 'text-vim-cyan text-sm font-semibold tracking-widest uppercase mb-6' }, 'VIM'),
+        h('h1', { className: 'text-6xl md:text-7xl font-black glow mb-6' }, 'Ask Your Building Anything'),
+        h('p', { className: 'text-2xl text-slate-400 font-light max-w-2xl mx-auto mb-8' },
+          'Your BIM data is trapped in Revit. VIM sets it free -- no license, no lock-in.'),
+        h('div', { className: 'flex gap-3 justify-center' },
+          h('span', { className: 'pill bg-vim-cyan/20 text-vim-cyan' }, '60x faster than SQL'),
+          h('span', { className: 'pill bg-blue-500/20 text-blue-400' }, 'Air-gap ready'),
+          h('span', { className: 'pill bg-emerald-500/20 text-emerald-400' }, 'Open source format'),
+        )
+      )
+    )
+  },
+  {
+    id: 'team',
+    category: 'core',
+    title: 'Meet the Team',
+    render: () => h('div', { className: 'slide slide-enter text-center' },
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Meet the VIM Team'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'An obsession with massive BIM models and all their data.'),
+      h('div', { className: 'flex justify-center gap-12' },
+        [
+          { name: 'Martin Ashton', role: 'Chief Technology Officer', desc: 'Architecture and rendering engine' },
+          { name: 'Samuel Arsenault-Brassard', role: 'Director of Product', desc: 'BIM workflows and analytics' },
+          { name: 'Terry Olynyk', role: 'Consultant', desc: 'Industry strategy and partnerships' },
+        ].map(p => h('div', { key: p.name, className: 'card text-center max-w-[220px]' },
+          h('div', { className: 'w-20 h-20 rounded-full bg-slate-700 mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-slate-400' },
+            p.name.split(' ').map(n => n[0]).join('')
+          ),
+          h('h3', { className: 'text-lg font-bold' }, p.name),
+          h('p', { className: 'text-vim-cyan text-sm' }, p.role),
+          h('p', { className: 'text-slate-500 text-xs mt-2' }, p.desc),
+        ))
+      )
+    )
+  },
+  {
+    id: 'problem',
+    category: 'core',
+    title: 'The Problem',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('h1', { className: 'text-5xl mb-2 glow' }, "What's Missing in Your BIM Workflows?"),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, '97% of project teams cannot open Revit files. The data is there -- getting to it is the problem.'),
+      h('div', { className: 'grid grid-cols-3 gap-6 mb-8' },
+        h('div', { className: 'card' },
+          h('div', { className: 'text-4xl font-black text-red-400 mb-3' }, '$9,500/yr'),
+          h('h3', { className: 'text-lg mb-2' }, 'Expensive'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'Per Revit seat, per year. Most team members who need BIM data cannot justify this cost.')
+        ),
+        h('div', { className: 'card' },
+          h('div', { className: 'text-4xl font-black text-amber-400 mb-3' }, 'Minutes'),
+          h('h3', { className: 'text-lg mb-2' }, 'Time-Consuming'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'Large models take 5-15 minutes to open. Multiple models across a portfolio? Painful.')
+        ),
+        h('div', { className: 'card' },
+          h('div', { className: 'text-4xl font-black text-slate-500 mb-3' }, 'Locked'),
+          h('h3', { className: 'text-lg mb-2' }, 'Impossible'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'Schedules, parameters, quantities -- trapped in a proprietary format. Export is manual and lossy.')
+        ),
+      )
+    )
+  },
+  {
+    id: 'what-vim-does',
+    category: 'core',
+    title: 'What VIM Does',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'What VIM Does'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'One export. Two powerful destinations.'),
+      h('div', { className: 'grid grid-cols-2 gap-8 mb-8' },
+        h('div', { className: 'card border-vim-cyan/30' },
+          h('div', { className: 'flex items-center gap-3 mb-4' },
+            h('div', { className: 'w-10 h-10 rounded-lg bg-vim-cyan/20 flex items-center justify-center text-vim-cyan font-bold' }, '3D'),
+            h('h2', { className: 'text-2xl' }, 'VIM Flex'),
+          ),
+          h('p', { className: 'text-slate-400 mb-4' }, 'Desktop viewer + analysis. Opens in seconds, runs on any laptop.'),
+          h('ul', { className: 'space-y-2 text-sm text-slate-300' },
+            h('li', null, 'Open VIM files -- fast, lightweight, no Revit'),
+            h('li', null, 'Count, Compare, Validate BIM data'),
+            h('li', null, 'Query and customize with AI'),
+            h('li', null, 'Free viewer, Pro for advanced workflows'),
+          )
+        ),
+        h('div', { className: 'card border-blue-500/30' },
+          h('div', { className: 'flex items-center gap-3 mb-4' },
+            h('div', { className: 'w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold' }, 'BI'),
+            h('h2', { className: 'text-2xl' }, 'Power BI'),
+          ),
+          h('p', { className: 'text-slate-400 mb-4' }, 'Self-host your BIM data pipeline. Share insights at scale.'),
+          h('ul', { className: 'space-y-2 text-sm text-slate-300' },
+            h('li', null, 'Connect with costs, schedules, carbon data'),
+            h('li', null, 'Share insights in Power BI to hundreds of people'),
+            h('li', null, '60x faster queries via Parquet'),
+            h('li', null, '30+ report templates ready to deploy'),
+          )
+        ),
+      ),
+      h('div', { className: 'text-center text-slate-500 text-sm' },
+        'Both consume the same VIM file. Export once from Revit, IFC, or Navisworks.')
+    )
+  },
+  {
+    id: 'social-proof',
+    category: 'core',
+    title: 'Trusted By',
+    render: () => h('div', { className: 'slide slide-enter text-center' },
+      h('h1', { className: 'text-5xl mb-4 glow' }, 'Trusted By Industry Leaders'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'From global AEC firms to government agencies.'),
+      h('div', { className: 'flex flex-wrap justify-center gap-12 mb-16 text-2xl font-bold text-slate-500' },
+        ['AECOM', 'EllisDon', 'RIB Software', 'Kahua', 'Kajima', 'Gensler', 'Skanska', 'Fosters+Partners', 'Mirvac', 'WT Partnership', 'Rosendin'].map(
+          name => h('span', { key: name, className: 'hover:text-slate-300 transition-colors' }, name)
+        )
+      ),
+      h('div', { className: 'grid grid-cols-3 gap-6 max-w-3xl mx-auto' },
+        h('div', { className: 'card text-center' },
+          h('div', { className: 'text-3xl font-black text-vim-cyan' }, 'RIB & Kahua'),
+          h('p', { className: 'text-sm text-slate-400 mt-2' }, 'Share massive 3D models securely to thousands of users, including USACE.')
+        ),
+        h('div', { className: 'card text-center' },
+          h('div', { className: 'text-3xl font-black text-blue-400' }, 'EllisDon'),
+          h('p', { className: 'text-sm text-slate-400 mt-2' }, 'PowerBI reports from BIM data across their project portfolio.')
+        ),
+        h('div', { className: 'card text-center' },
+          h('div', { className: 'text-3xl font-black text-emerald-400' }, 'AECOM'),
+          h('p', { className: 'text-sm text-slate-400 mt-2' }, 'Enterprise-scale BIM analytics for global infrastructure projects.')
+        ),
+      )
+    )
+  },
+  {
+    id: 'how-we-work',
+    category: 'core',
+    title: 'How We Work With You',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'How We Work With You'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'From first model to portfolio-scale deployment.'),
+      h('div', { className: 'grid grid-cols-4 gap-6' },
+        [
+          { step: '01', title: 'Pilot', desc: 'Export your models to VIM. See the speed difference in minutes. Free.' },
+          { step: '02', title: 'Configure', desc: 'Set up the workflows and reports that match your pain points.' },
+          { step: '03', title: 'Deploy', desc: 'Roll out to your team. Self-hosted, cloud, or air-gapped -- your choice.' },
+          { step: '04', title: 'Scale', desc: 'Expand across projects. Portfolio analytics, automated exports, custom integrations.' },
+        ].map(s => h('div', { key: s.step, className: 'card' },
+          h('div', { className: 'text-vim-cyan text-sm font-bold mb-3' }, s.step),
+          h('h3', { className: 'text-xl mb-2' }, s.title),
+          h('p', { className: 'text-slate-400 text-sm' }, s.desc),
+        ))
+      )
+    )
+  },
+
+  // --- CONDITIONAL SLIDES ---
+  {
+    id: 'ai-analysis',
+    category: 'ai',
+    title: 'AI-Powered Analysis',
+    conditions: p => p.aiStance === 'pro' || p.aiStance === 'neutral',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-violet-500/20 text-violet-400 mb-4' }, 'AI'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'AI-Powered BIM Analysis'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'Ask questions in plain English. Get answers from your model.'),
+      h('div', { className: 'grid grid-cols-2 gap-8' },
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4 text-vim-cyan' }, 'What You Can Ask'),
+          h('div', { className: 'space-y-3 text-slate-300' },
+            ['"How many doors are on Level 2?"', '"Show me all walls without a fire rating"', '"What is the total area of concrete floors?"', '"Compare element counts between two models"'].map(
+              q => h('div', { key: q, className: 'bg-slate-800/50 rounded-lg px-4 py-2 text-sm font-mono' }, q)
+            )
+          )
+        ),
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4 text-vim-cyan' }, 'How It Works'),
+          h('ul', { className: 'space-y-3 text-slate-300 text-sm' },
+            h('li', null, 'Claude AI reads your BIM database directly'),
+            h('li', null, 'Generates SQL queries, not hallucinated answers'),
+            h('li', null, 'Results link to 3D view -- click to see elements'),
+            h('li', null, 'Can build custom reports and dashboards on the fly'),
+          ),
+          h('p', { className: 'mt-4 text-slate-500 text-xs' }, 'Data stays local. AI connects via MCP protocol -- no model uploads required.')
+        )
+      )
+    )
+  },
+  {
+    id: 'powerbi-deep',
+    category: 'powerbi',
+    title: 'Power BI Deep Dive',
+    conditions: p => p.currentTools === 'powerbi' || p.currentTools === 'interested',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-blue-500/20 text-blue-400 mb-4' }, 'Power BI'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'BIM Meets Business Intelligence'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, '30+ templates. Parquet-powered. Portfolio-ready.'),
+      h('div', { className: 'grid grid-cols-3 gap-6' },
+        ['Element Audit', 'Level Breakdown', 'Material Takeoff', 'Warning Analysis', 'Model Comparison', 'Parameter Quality'].map(
+          t => h('div', { key: t, className: 'card text-center' },
+            h('h3', { className: 'text-lg' }, t),
+            h('p', { className: 'text-slate-500 text-sm mt-1' }, 'Ready-to-use template'),
+          )
+        )
+      ),
+      h('div', { className: 'mt-8 card bg-blue-500/5 border-blue-500/20' },
+        h('p', { className: 'text-slate-300' },
+          'VIM exports to Parquet -- 60x faster than SQL Server. One model or 100, Power BI handles it. Share via Teams, SharePoint, or embed in your own apps.')
+      )
+    )
+  },
+  {
+    id: 'flex-workflows',
+    category: 'flex',
+    title: 'VIM Flex Workflows',
+    conditions: p => true, // Almost always relevant
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-vim-cyan/20 text-vim-cyan mb-4' }, 'VIM Flex'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Built-In Workflows'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'Open a model, pick a workflow, get answers.'),
+      h('div', { className: 'grid grid-cols-4 gap-4' },
+        [
+          { name: 'Explorer', desc: 'Browse all elements with hierarchical filtering' },
+          { name: 'Mesh Audit', desc: 'Geometry quality and triangle analysis' },
+          { name: 'Warning Audit', desc: 'Revit warnings mapped to elements in 3D' },
+          { name: 'Diff / Compare', desc: 'Version-to-version or design option comparison' },
+          { name: 'Clash Detection', desc: 'Find spatial conflicts between disciplines' },
+          { name: 'Model Report', desc: 'Overview stats, dimensions, level breakdown' },
+          { name: 'LOI Checker', desc: 'Level of Information compliance checking' },
+          { name: 'Material Detect', desc: 'Auto-classify materials from naming patterns' },
+        ].map(w => h('div', { key: w.name, className: 'card' },
+          h('h3', { className: 'text-sm font-bold text-vim-cyan' }, w.name),
+          h('p', { className: 'text-slate-400 text-xs mt-1' }, w.desc),
+        ))
+      )
+    )
+  },
+  {
+    id: 'clash',
+    category: 'coordination',
+    title: 'Clash Detection',
+    conditions: p => p.pain.includes('coordination') || p.pain.includes('all'),
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-red-500/20 text-red-400 mb-4' }, 'Coordination'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Clash Detection'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'Find conflicts before they hit the field.'),
+      h('div', { className: 'grid grid-cols-2 gap-8' },
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'What It Does'),
+          h('ul', { className: 'space-y-2 text-slate-300 text-sm' },
+            h('li', null, 'Hard clash: physical intersections between elements'),
+            h('li', null, 'Clearance: minimum distance violations'),
+            h('li', null, 'Duplicate detection: overlapping identical geometry'),
+            h('li', null, 'Results in 3D with distance/volume metrics'),
+          )
+        ),
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'vs Navisworks'),
+          h('ul', { className: 'space-y-2 text-slate-300 text-sm' },
+            h('li', null, 'No Navisworks license needed'),
+            h('li', null, 'Runs on any laptop (no workstation required)'),
+            h('li', null, 'Results exportable to BCF, CSV'),
+            h('li', null, 'AI can set up 85+ standard rules in seconds'),
+          )
+        ),
+      )
+    )
+  },
+  {
+    id: 'design-compare',
+    category: 'tracking',
+    title: 'Design Compare',
+    conditions: p => p.pain.includes('tracking') || p.pain.includes('all'),
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-amber-500/20 text-amber-400 mb-4' }, 'Version Tracking'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Model Diff & Design Compare'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'See exactly what changed between versions.'),
+      h('div', { className: 'card max-w-3xl mx-auto' },
+        h('div', { className: 'grid grid-cols-3 gap-6 text-center' },
+          h('div', null,
+            h('div', { className: 'text-3xl font-black text-emerald-400' }, 'Added'),
+            h('p', { className: 'text-slate-400 text-sm mt-1' }, 'New elements in the updated model')
+          ),
+          h('div', null,
+            h('div', { className: 'text-3xl font-black text-amber-400' }, 'Modified'),
+            h('p', { className: 'text-slate-400 text-sm mt-1' }, 'Elements with changed parameters or geometry')
+          ),
+          h('div', null,
+            h('div', { className: 'text-3xl font-black text-red-400' }, 'Removed'),
+            h('p', { className: 'text-slate-400 text-sm mt-1' }, 'Elements deleted from the model')
+          ),
+        ),
+        h('p', { className: 'text-slate-400 text-sm mt-6 text-center' },
+          'Color-coded in 3D. Filterable by category, level, parameter. Exportable to CSV.')
+      )
+    )
+  },
+  {
+    id: 'estimation',
+    category: 'estimation',
+    title: 'Cost Estimation',
+    conditions: p => p.pain.includes('estimation') || p.pain.includes('all'),
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-emerald-500/20 text-emerald-400 mb-4' }, 'Estimation'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'BIM-Based Cost Estimation'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'From model to estimate. Quantities already extracted.'),
+      h('div', { className: 'card max-w-3xl mx-auto' },
+        h('ul', { className: 'space-y-3 text-slate-300' },
+          h('li', null, 'Area, volume, length quantities extracted automatically from BIM elements'),
+          h('li', null, 'Classify by MasterFormat / trade / assembly'),
+          h('li', null, 'Apply unit rates, generate cost breakdown by level/trade/division'),
+          h('li', null, 'Export to CSV for downstream estimating tools'),
+        ),
+        h('p', { className: 'text-slate-500 text-sm mt-6' },
+          'Works with both design models (conceptual quantities) and construction models (as-built accuracy).')
+      )
+    )
+  },
+  {
+    id: 'bim-audit',
+    category: 'quality',
+    title: 'BIM Audit & Quality',
+    conditions: p => p.pain.includes('audit') || p.pain.includes('all'),
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-blue-500/20 text-blue-400 mb-4' }, 'Quality'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Model Quality Audit'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'Catch problems before they cascade downstream.'),
+      h('div', { className: 'grid grid-cols-2 gap-8' },
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'What Gets Checked'),
+          h('ul', { className: 'space-y-2 text-slate-300 text-sm' },
+            h('li', null, 'Revit warnings mapped to 3D elements'),
+            h('li', null, 'LOI (Level of Information) compliance'),
+            h('li', null, 'Missing parameters and empty fields'),
+            h('li', null, 'Naming convention violations'),
+            h('li', null, 'Classification and coding standards'),
+          )
+        ),
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'Industry Impact'),
+          h('div', { className: 'space-y-4' },
+            h('div', null,
+              h('div', { className: 'text-2xl font-black text-emerald-400' }, '3-10%'),
+              h('p', { className: 'text-slate-400 text-sm' }, 'Cost reduction from better model quality')
+            ),
+            h('div', null,
+              h('div', { className: 'text-2xl font-black text-blue-400' }, '15-30%'),
+              h('p', { className: 'text-slate-400 text-sm' }, 'Less rework when issues caught early')
+            ),
+          )
+        ),
+      )
+    )
+  },
+  {
+    id: 'ifc-openbim',
+    category: 'interop',
+    title: 'IFC & openBIM',
+    conditions: p => p.bimRole === 'owner' || p.bimRole === 'contractor' || p.bimRole === 'consultant',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-green-500/20 text-green-400 mb-4' }, 'Interoperability'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'IFC & openBIM Support'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, "Don't author in Revit? No problem."),
+      h('div', { className: 'card max-w-3xl mx-auto' },
+        h('ul', { className: 'space-y-3 text-slate-300' },
+          h('li', null, 'Import IFC files directly -- no Revit needed'),
+          h('li', null, 'VIM extracts up to 13% more elements than competitors from identical IFC files'),
+          h('li', null, 'Navisworks NWD/NWC export also supported'),
+          h('li', null, 'Same VIM Flex + Power BI workflows regardless of source format'),
+        ),
+      )
+    )
+  },
+  {
+    id: 'portfolio',
+    category: 'scale',
+    title: 'Portfolio Scale',
+    conditions: p => p.scale === '100+',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-violet-500/20 text-violet-400 mb-4' }, 'Scale'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Portfolio-Scale Analytics'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'One dashboard. Hundreds of projects.'),
+      h('div', { className: 'card max-w-3xl mx-auto' },
+        h('ul', { className: 'space-y-3 text-slate-300' },
+          h('li', null, 'Automated export from Revit Server or BIM 360'),
+          h('li', null, 'Cross-project Power BI reports: compare quality, cost, progress'),
+          h('li', null, 'Track model health trends over time'),
+          h('li', null, 'VIM Server (coming soon): browser-based access, zero IT overhead'),
+        ),
+      )
+    )
+  },
+  {
+    id: 'enterprise',
+    category: 'security',
+    title: 'Enterprise & Security',
+    conditions: p => p.aiStance === 'anti' || p.scale === '100+',
+    render: () => h('div', { className: 'slide slide-enter' },
+      h('div', { className: 'tag bg-slate-500/20 text-slate-400 mb-4' }, 'Enterprise'),
+      h('h1', { className: 'text-5xl mb-2 glow' }, 'Self-Hosted. Air-Gapped. Secure.'),
+      h('p', { className: 'text-xl text-slate-400 mb-12' }, 'Your data never leaves your network.'),
+      h('div', { className: 'grid grid-cols-2 gap-8' },
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'Security'),
+          h('ul', { className: 'space-y-2 text-slate-300 text-sm' },
+            h('li', null, 'On-premise deployment -- no cloud dependency'),
+            h('li', null, 'No telemetry, no phone-home'),
+            h('li', null, 'Air-gap compatible (USACE approved)'),
+            h('li', null, 'Open source file format -- auditable'),
+          )
+        ),
+        h('div', { className: 'card' },
+          h('h3', { className: 'text-xl mb-4' }, 'Deployment'),
+          h('ul', { className: 'space-y-2 text-slate-300 text-sm' },
+            h('li', null, 'Scheduled automated exports from Revit'),
+            h('li', null, 'Internal Power BI gateway integration'),
+            h('li', null, 'IT controls who sees what'),
+            h('li', null, 'VIM Server coming for browser-based access'),
+          )
+        ),
+      )
+    )
+  },
+  {
+    id: 'closing',
+    category: 'core',
+    title: 'Next Steps',
+    render: () => h('div', { className: 'slide slide-enter text-center' },
+      h('h1', { className: 'text-5xl mb-4 glow' }, 'Ready to Free Your BIM Data?'),
+      h('p', { className: 'text-xl text-slate-400 mb-12 max-w-2xl mx-auto' },
+        'Start with a free pilot. Export one model, see the difference in minutes.'),
+      h('div', { className: 'flex gap-8 justify-center' },
+        h('div', { className: 'card text-center' },
+          h('h3', { className: 'text-xl mb-2 text-vim-cyan' }, 'Free'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'VIM Flex viewer + Revit exporter. No cost, no commitment.'),
+        ),
+        h('div', { className: 'card text-center' },
+          h('h3', { className: 'text-xl mb-2 text-blue-400' }, 'Pro'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'AI analysis, advanced workflows, Parquet export.'),
+        ),
+        h('div', { className: 'card text-center' },
+          h('h3', { className: 'text-xl mb-2 text-emerald-400' }, 'Enterprise'),
+          h('p', { className: 'text-slate-400 text-sm' }, 'Self-hosted, scheduled exports, portfolio Power BI.'),
+        ),
+      ),
+      h('p', { className: 'text-vim-cyan text-lg font-semibold mt-8 mb-4' }, 'Ask Your Building Anything.'),
+      h('p', { className: 'text-slate-500' }, 'vimaec.com | info@vimaec.com'),
+    )
+  },
+];
+
+// ============================================================================
+// QUESTIONNAIRE COMPONENT
+// ============================================================================
+
+function Questionnaire({ onComplete }) {
+  const [answers, setAnswers] = useState({
+    aiStance: null,
+    bimRole: null,
+    pain: [],
+    delivery: null,
+    currentTools: null,
+    scale: null,
+    techLevel: null,
+  });
+  const [step, setStep] = useState(0);
+
+  const questions = [
+    {
+      key: 'aiStance',
+      label: "How do you feel about AI in your workflows?",
+      options: [
+        { value: 'anti', label: 'Not for us', desc: 'Security or policy concerns' },
+        { value: 'neutral', label: 'Open to it', desc: 'Interested but not a priority' },
+        { value: 'pro', label: 'Excited', desc: 'Want AI-powered features' },
+        { value: 'advanced', label: 'Already using AI', desc: 'Active AI tools in our stack' },
+      ],
+      multi: false,
+    },
+    {
+      key: 'bimRole',
+      label: 'How do you work with BIM models?',
+      options: [
+        { value: 'designer', label: 'We design them', desc: 'Author models in Revit' },
+        { value: 'owner', label: 'We receive them', desc: 'Owner or facility manager' },
+        { value: 'contractor', label: 'We build from them', desc: 'Contractor, estimation, scheduling' },
+        { value: 'consultant', label: 'We review them', desc: 'Consultant, QA/QC, compliance' },
+      ],
+      multi: false,
+    },
+    {
+      key: 'pain',
+      label: 'What are your biggest BIM challenges? (select all that apply)',
+      options: [
+        { value: 'estimation', label: 'Cost Estimation' },
+        { value: 'scheduling', label: 'Scheduling / 4D' },
+        { value: 'audit', label: 'BIM Audit / Quality' },
+        { value: 'coordination', label: 'Coordination / Clashes' },
+        { value: 'tracking', label: 'Version Tracking' },
+        { value: 'carbon', label: 'Carbon / Sustainability' },
+        { value: 'reporting', label: 'Reporting / Analytics' },
+        { value: 'all', label: 'Show Everything' },
+      ],
+      multi: true,
+    },
+    {
+      key: 'currentTools',
+      label: 'What analytics tools do you use today?',
+      options: [
+        { value: 'powerbi', label: 'Power BI', desc: 'Already using or licensed' },
+        { value: 'excel', label: 'Excel / Spreadsheets', desc: 'Manual reporting' },
+        { value: 'interested', label: 'Looking to start', desc: 'Want to adopt analytics' },
+        { value: 'none', label: 'Nothing yet', desc: 'No BIM analytics in place' },
+      ],
+      multi: false,
+    },
+    {
+      key: 'scale',
+      label: 'How many BIM models are you working with?',
+      options: [
+        { value: 'small', label: 'A few projects', desc: 'Under 10 active models' },
+        { value: 'medium', label: 'Multiple teams', desc: '10-100 models across projects' },
+        { value: '100+', label: 'Portfolio scale', desc: '100+ models, enterprise operations' },
+      ],
+      multi: false,
+    },
+  ];
+
+  const q = questions[step];
+  const isLast = step === questions.length - 1;
+  const canAdvance = q.multi ? answers[q.key].length > 0 : answers[q.key] !== null;
+
+  function select(value) {
+    if (q.multi) {
+      const arr = answers[q.key];
+      if (value === 'all') {
+        setAnswers({ ...answers, [q.key]: ['all'] });
+      } else {
+        const filtered = arr.filter(v => v !== 'all');
+        const next = filtered.includes(value) ? filtered.filter(v => v !== value) : [...filtered, value];
+        setAnswers({ ...answers, [q.key]: next });
+      }
+    } else {
+      setAnswers({ ...answers, [q.key]: value });
+      if (!isLast) setTimeout(() => setStep(step + 1), 200);
+    }
+  }
+
+  function next() {
+    if (isLast) onComplete(answers);
+    else setStep(step + 1);
+  }
+
+  return h('div', { className: 'min-h-screen flex items-center justify-center p-8' },
+    h('div', { className: 'max-w-2xl w-full' },
+      h('div', { className: 'text-vim-cyan text-sm font-semibold tracking-widest uppercase mb-2' }, 'VIM'),
+      h('div', { className: 'text-slate-500 text-sm mb-8' }, `Let's customize your demo -- ${step + 1} of ${questions.length}`),
+      h('h2', { className: 'text-3xl font-bold mb-8' }, q.label),
+      h('div', { className: 'grid grid-cols-2 gap-3' },
+        q.options.map(opt =>
+          h('div', {
+            key: opt.value,
+            className: `questionnaire-option ${
+              q.multi
+                ? answers[q.key].includes(opt.value) ? 'selected' : ''
+                : answers[q.key] === opt.value ? 'selected' : ''
+            }`,
+            onClick: () => select(opt.value),
+          },
+            h('div', { className: 'font-semibold' }, opt.label),
+            opt.desc && h('div', { className: 'text-slate-500 text-sm mt-1' }, opt.desc),
+          )
+        )
+      ),
+      h('div', { className: 'flex justify-between mt-8' },
+        h('button', {
+          className: 'btn btn-secondary',
+          onClick: () => step > 0 && setStep(step - 1),
+          disabled: step === 0,
+          style: { opacity: step === 0 ? 0.3 : 1 }
+        }, 'Back'),
+        h('button', {
+          className: `btn ${canAdvance ? 'btn-primary' : 'btn-secondary'}`,
+          onClick: next,
+          disabled: !canAdvance,
+        }, isLast ? 'Build Deck' : 'Next')
+      )
+    )
+  );
+}
+
+// ============================================================================
+// PRESENTATION COMPONENT
+// ============================================================================
+
+function Presentation({ profile, onReset }) {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Filter slides based on profile
+  const activeSlides = SLIDES.filter(s => {
+    if (s.category === 'core') return true;
+    if (s.conditions) return s.conditions(profile);
+    return false;
+  });
+
+  const slide = activeSlides[currentSlide];
+  const total = activeSlides.length;
+
+  const goNext = useCallback(() => setCurrentSlide(i => Math.min(i + 1, total - 1)), [total]);
+  const goPrev = useCallback(() => setCurrentSlide(i => Math.max(i - 1, 0)), []);
+
+  useEffect(() => {
+    function handleKey(e) {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+      if (e.key === 'b') setDrawerOpen(o => !o);
+      if (e.key === 'q') onReset();
+      if (e.key === 'Escape') setDrawerOpen(false);
+    }
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [goNext, goPrev, onReset]);
+
+  // Bullet drawer: all slides NOT in active set
+  const bulletSlides = SLIDES.filter(s => !activeSlides.includes(s));
+
+  return h(Fragment, null,
+    // Progress bar
+    h('div', { className: 'progress-bar', style: { width: `${((currentSlide + 1) / total) * 100}%` } }),
+
+    // Current slide
+    h('div', { key: slide.id }, slide.render()),
+
+    // Navigation
+    h('div', { className: 'slide-nav' },
+      h('button', { className: 'text-slate-400 hover:text-white px-2', onClick: goPrev }, '<'),
+      h('span', { className: 'text-sm text-slate-500 min-w-[60px] text-center' }, `${currentSlide + 1} / ${total}`),
+      h('button', { className: 'text-slate-400 hover:text-white px-2', onClick: goNext }, '>'),
+      h('span', { className: 'text-slate-700 mx-2' }, '|'),
+      h('button', { className: 'text-sm text-slate-500 hover:text-vim-cyan', onClick: () => setDrawerOpen(!drawerOpen) }, 'More'),
+      h('button', { className: 'text-sm text-slate-500 hover:text-vim-cyan ml-2', onClick: onReset }, 'Reset'),
+    ),
+
+    // Bullet drawer
+    h('div', { className: `drawer ${drawerOpen ? 'open' : ''}` },
+      h('div', { className: 'flex justify-between items-center mb-4' },
+        h('h3', { className: 'text-lg font-bold' }, 'Additional Slides'),
+        h('button', { className: 'text-slate-400 hover:text-white', onClick: () => setDrawerOpen(false) }, 'X'),
+      ),
+      h('p', { className: 'text-slate-500 text-xs mb-4' }, 'Click to jump to any slide. These were excluded by your profile.'),
+      bulletSlides.map(s =>
+        h('button', {
+          key: s.id,
+          className: 'w-full text-left p-3 rounded-lg hover:bg-slate-800 mb-2 transition-colors',
+          onClick: () => {
+            // Temporarily add to active and jump
+            const idx = SLIDES.indexOf(s);
+            setCurrentSlide(activeSlides.length); // Will be off but we insert
+            // For now just alert -- proper implementation would inject
+            setDrawerOpen(false);
+          }
+        },
+          h('div', { className: 'font-semibold text-sm' }, s.title || s.id),
+          h('div', { className: 'text-slate-500 text-xs' }, s.category),
+        )
+      ),
+      h('div', { className: 'mt-6 border-t border-slate-700 pt-4' },
+        h('h4', { className: 'text-sm font-bold mb-3' }, 'All Slides'),
+        activeSlides.map((s, i) =>
+          h('button', {
+            key: s.id,
+            className: `w-full text-left p-2 rounded text-sm mb-1 ${i === currentSlide ? 'bg-vim-cyan/10 text-vim-cyan' : 'text-slate-400 hover:text-white'}`,
+            onClick: () => { setCurrentSlide(i); setDrawerOpen(false); }
+          }, `${i + 1}. ${s.title || 'Title'}`)
+        )
+      )
+    ),
+
+    // Click overlay for drawer close
+    drawerOpen && h('div', {
+      className: 'fixed inset-0 z-40',
+      onClick: () => setDrawerOpen(false),
+      style: { background: 'rgba(0,0,0,0.3)' }
+    }),
+  );
+}
+
+// ============================================================================
+// APP
+// ============================================================================
+
+function App() {
+  const [profile, setProfile] = useState(null);
+
+  if (!profile) {
+    return h(Questionnaire, { onComplete: setProfile });
+  }
+
+  return h(Presentation, { profile, onReset: () => setProfile(null) });
+}
+
+createRoot(document.getElementById('app')).render(h(App));
+</script>
+</body>
+</html>
