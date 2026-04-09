@@ -66,7 +66,7 @@ const SLIDES = [
     title: '',
     render: () => h('div', { className: 'slide slide-enter flex items-center justify-center text-center' },
       h('div', null,
-        h('div', { className: 'text-vim-cyan text-sm font-semibold tracking-widest uppercase mb-6' }, 'VIM'),
+        h('img', { src: 'images/vim-logo.png', className: 'w-20 h-20 mx-auto mb-6', alt: 'VIM' }),
         h('h1', { className: 'text-6xl md:text-7xl font-black glow mb-6' }, 'Ask Your Building Anything'),
         h('p', { className: 'text-2xl text-slate-400 font-light max-w-2xl mx-auto mb-8' },
           'Your BIM data is trapped in Revit. VIM sets it free -- no license, no lock-in.'),
@@ -162,6 +162,10 @@ const SLIDES = [
           )
         ),
       ),
+      h('div', { className: 'grid grid-cols-2 gap-8 mb-6' },
+        h('img', { src: 'images/screenshot-flex.png', className: 'rounded-lg border border-slate-700 w-full', alt: 'VIM Flex screenshot' }),
+        h('img', { src: 'images/screenshot-powerbi.png', className: 'rounded-lg border border-slate-700 w-full', alt: 'Power BI screenshot' }),
+      ),
       h('div', { className: 'text-center text-slate-500 text-sm' },
         'Both consume the same VIM file. Export once from Revit, IFC, or Navisworks.')
     )
@@ -173,9 +177,16 @@ const SLIDES = [
     render: () => h('div', { className: 'slide slide-enter text-center' },
       h('h1', { className: 'text-5xl mb-4 glow' }, 'Trusted By Industry Leaders'),
       h('p', { className: 'text-xl text-slate-400 mb-12' }, 'From global AEC firms to government agencies.'),
-      h('div', { className: 'flex flex-wrap justify-center gap-12 mb-16 text-2xl font-bold text-slate-500' },
-        ['AECOM', 'EllisDon', 'RIB Software', 'Kahua', 'Kajima', 'Gensler', 'Skanska', 'Fosters+Partners', 'Mirvac', 'WT Partnership', 'Rosendin'].map(
-          name => h('span', { key: name, className: 'hover:text-slate-300 transition-colors' }, name)
+      h('div', { className: 'flex flex-wrap justify-center items-center gap-12 mb-16' },
+        [
+          { name: 'AECOM', src: 'images/logo-aecom.png' },
+          { name: 'EllisDon', src: 'images/logo-ellisdon.png' },
+          { name: 'Kajima', src: 'images/logo-kajima.jpg' },
+          { name: 'WT Partnership', src: 'images/logo-wt.jpg' },
+          { name: 'USACE', src: 'images/logo-usace.jpg' },
+          { name: 'Deloitte', src: 'images/logo-deloitte.png' },
+        ].map(
+          logo => h('img', { key: logo.name, src: logo.src, alt: logo.name, className: 'h-12 object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-opacity', title: logo.name })
         )
       ),
       h('div', { className: 'grid grid-cols-3 gap-6 max-w-3xl mx-auto' },
