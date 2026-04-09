@@ -87,13 +87,15 @@ const SLIDES = [
       h('p', { className: 'text-xl text-slate-400 mb-12' }, 'An obsession with massive BIM models and all their data.'),
       h('div', { className: 'flex justify-center gap-12' },
         [
-          { name: 'Martin Ashton', role: 'Chief Technology Officer', desc: 'Architecture and rendering engine' },
-          { name: 'Samuel Arsenault-Brassard', role: 'Director of Product', desc: 'BIM workflows and analytics' },
-          { name: 'Terry Olynyk', role: 'Consultant', desc: 'Industry strategy and partnerships' },
+          { name: 'Martin Ashton', role: 'Chief Technology Officer', desc: 'Architecture and rendering engine', photo: 'images/photo-martin.jpg' },
+          { name: 'Samuel Arsenault-Brassard', role: 'Director of Product', desc: 'BIM workflows and analytics', photo: 'images/photo-samuel-hq.jpg' },
+          { name: 'Terry Olynyk', role: 'Consultant', desc: 'Industry strategy and partnerships', photo: 'images/photo-terry.jpg' },
         ].map(p => h('div', { key: p.name, className: 'card text-center max-w-[220px]' },
-          h('div', { className: 'w-20 h-20 rounded-full bg-slate-700 mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-slate-400' },
-            p.name.split(' ').map(n => n[0]).join('')
-          ),
+          p.photo
+            ? h('img', { src: p.photo, className: 'w-20 h-20 rounded-full mx-auto mb-4 object-cover' })
+            : h('div', { className: 'w-20 h-20 rounded-full bg-slate-700 mx-auto mb-4 flex items-center justify-center text-2xl font-bold text-slate-400' },
+                p.name.split(' ').map(n => n[0]).join('')
+              ),
           h('h3', { className: 'text-lg font-bold' }, p.name),
           h('p', { className: 'text-vim-cyan text-sm' }, p.role),
           h('p', { className: 'text-slate-500 text-xs mt-2' }, p.desc),
@@ -186,7 +188,9 @@ const SLIDES = [
           { name: 'USACE', src: 'images/logo-usace.jpg' },
           { name: 'Deloitte', src: 'images/logo-deloitte.png' },
         ].map(
-          logo => h('img', { key: logo.name, src: logo.src, alt: logo.name, className: 'h-12 object-contain brightness-0 invert opacity-60 hover:opacity-100 transition-opacity', title: logo.name })
+          logo => h('div', { key: logo.name, className: 'bg-white/90 rounded-lg px-4 py-2 hover:bg-white transition-colors' },
+            h('img', { src: logo.src, alt: logo.name, className: 'h-10 object-contain', title: logo.name })
+          )
         )
       ),
       h('div', { className: 'grid grid-cols-3 gap-6 max-w-3xl mx-auto' },
@@ -669,13 +673,15 @@ function Questionnaire({ onComplete }) {
 function Presentation({ profile, onReset }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [injectedSlides, setInjectedSlides] = useState([]);
 
-  // Filter slides based on profile
-  const activeSlides = SLIDES.filter(s => {
+  // Filter slides based on profile + any injected bullet slides
+  const baseSlides = SLIDES.filter(s => {
     if (s.category === 'core') return true;
     if (s.conditions) return s.conditions(profile);
     return false;
   });
+  const activeSlides = [...baseSlides, ...injectedSlides];
 
   const slide = activeSlides[currentSlide];
   const total = activeSlides.length;
@@ -695,8 +701,8 @@ function Presentation({ profile, onReset }) {
     return () => window.removeEventListener('keydown', handleKey);
   }, [goNext, goPrev, onReset]);
 
-  // Bullet drawer: all slides NOT in active set
-  const bulletSlides = SLIDES.filter(s => !activeSlides.includes(s));
+  // Bullet drawer: slides NOT in base set and not already injected
+  const bulletSlides = SLIDES.filter(s => !baseSlides.includes(s) && !injectedSlides.includes(s));
 
   return h(Fragment, null,
     // Progress bar
@@ -727,10 +733,8 @@ function Presentation({ profile, onReset }) {
           key: s.id,
           className: 'w-full text-left p-3 rounded-lg hover:bg-slate-800 mb-2 transition-colors',
           onClick: () => {
-            // Temporarily add to active and jump
-            const idx = SLIDES.indexOf(s);
-            setCurrentSlide(activeSlides.length); // Will be off but we insert
-            // For now just alert -- proper implementation would inject
+            setInjectedSlides(prev => [...prev, s]);
+            setCurrentSlide(activeSlides.length); // new slide will be at this index
             setDrawerOpen(false);
           }
         },
